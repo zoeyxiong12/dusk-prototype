@@ -1,16 +1,40 @@
-# Dusk — work-in-progress prototype
+# Dusk
 
-Dusk turns everyday work notes into structured entries and reports. This English prototype follows the latest case-study navigation and entry model. It is still under development, with simplified visuals and browser-local storage.
+An AI-assisted work log for turning everyday notes into entries and reports.
 
-## Try the workflow
+**Status: in development.** This repository contains a working prototype of the core workflow. The portfolio shows the intended product design; some interactions and visual details are still being implemented here.
 
-1. **Capture:** write notes and organise them with AI, or use **Try sample notes** without making an API request.
-2. Review or edit the entry’s project, work type, description and work status, then confirm it. Work status (Done / In progress / On hold) is separate from confirmation.
-3. Select confirmed entries and open **Report**. Choose Daily standup or Progress update, a date range and source entries. Generate with AI, or preview a deterministic template without an API request. Copy or edit the result.
-4. **Records** searches and filters the shared work log. **Calendar** shows all entries on a chosen date. **Dashboard** counts confirmed entries only.
-5. **Setup** lets you maintain the project and work type lists supplied to the parsing request.
+## The idea
 
-Entries and setup lists are saved in this browser’s localStorage. Report selection is retained in sessionStorage when switching pages. No account is required. Sample data starts in June 2026: 31 entries, 29 confirmed, 2 awaiting confirmation. The confirmed project counts are 13 / 10 / 6. Calendar includes pending entries; reports and Dashboard exclude them.
+Record work once, then use those entries when you need a report or want to look back at past work.
+
+- **Capture:** write notes, review the suggested entries and confirm them.
+- **Report:** choose entries and a date range for a Daily standup or Progress update.
+- **Records:** search and filter individual entries.
+- **Calendar:** see what was recorded on a particular day.
+- **Dashboard:** view counts of confirmed entries by date, project and work type.
+
+## What works in this prototype
+
+The pages share one entry model. You can edit entries, confirm them, select report sources and generate or copy a report. Entries and setup lists are saved locally in the browser. Work status (Done, In progress or On hold) is separate from whether an entry has been confirmed.
+
+Two separate AI requests handle the core tasks:
+
+1. `app/api/parse-entry/route.ts` turns notes into structured suggestions using the configured project and work type lists.
+2. `app/api/generate-report/route.ts` generates a report from selected confirmed entries.
+
+Both requests use Groq. Parsing uses a temperature of 0.3; report generation uses 0.7. The prompts and validation limit categories and ask the model to preserve recorded quantities without inventing results. Users still review the output.
+
+The included June 2026 dataset is illustrative: 31 entries, 29 confirmed and 2 awaiting confirmation. **Try sample notes** and **Preview template** demonstrate the workflow without an AI request. These actions are labelled separately from AI generation.
+
+## Still being developed
+
+- First-use onboarding and suggested project/work type lists.
+- Final interface styling and mascot interactions from the case study.
+- Authentication, database persistence and cross-device sync.
+- Further testing and production controls.
+
+The current prototype uses localStorage for the work log and sessionStorage for report selection. Existing Supabase routes are scaffolding for future database work and are not used by the current interface. This is not a hosted service or a production release.
 
 ## Run locally
 
@@ -19,45 +43,35 @@ Requires Node.js 20.9+ and npm.
 ```sh
 npm ci
 cp .env.example .env.local
-# Optional: set GROQ_API_KEY for real AI generation.
 npm run dev
 ```
 
-Then open http://localhost:3000 **on the computer running the development server**. This is a local development address, not a hosted public demo. The sample-note and template-preview actions work without a key. AI actions make real requests using your server-side Groq key.
+Once the server is running, open `http://localhost:3000` in your browser. This address only works on the computer running the server; it is not an online demo link.
 
-`npm run dev` uses Webpack. The original dependency directory was copied from another platform; run `npm ci` to install the correct native packages for your own machine.
+The sample workflow needs no API key. To use real AI generation, add your own `GROQ_API_KEY` to `.env.local` and restart the server. Keep that file private. Supabase variables are optional and only needed for database development.
 
-## Two separate API calls
+## Code guide
 
-- `POST /api/parse-entry` converts notes into structured entry suggestions. It receives the configured project and work type lists; unmatched values become Uncategorised. Temperature: 0.3.
-- `POST /api/generate-report` accepts selected confirmed entries and a report type. Its instructions preserve recorded quantities and avoid unsupported claims. Temperature: 0.7.
-
-Both routes validate their input. Parsing output is checked and remains unconfirmed until reviewed. Demo/template responses are explicitly labelled and never silently replace a failed AI request.
-
-## Development status
-
-Implemented: English navigation and prompts, shared entry model, browser persistence, review/edit/confirm, report selection and generation, date-based Calendar, Dashboard filters/counts and editable setup lists.
-
-Still in progress:
-
-- Full first-use onboarding and suggested setup lists.
-- The final visual details and mascot motion from the case study.
-- Authentication, server persistence, cross-device sync and production controls.
-- Broader automated and usability testing.
-
-Legacy daily/weekly/monthly and Today URLs redirect to the revised Report and Capture views. The old Supabase entries route/helpers are retained for future database work; the current UI does not use them. Supabase configuration is optional. No database schema or hosted deployment is included.
+| Location | Purpose |
+| --- | --- |
+| `lib/entries.ts` | Entry schema, categories and sample data |
+| `components/EntryStore.tsx` | Shared browser-backed work log |
+| `components/EntryList.tsx` | Review, edit, confirmation and selection |
+| `app/capture`, `app/records`, `app/report` | Core work-log and reporting pages |
+| `app/calendar`, `app/page.tsx` | Calendar and Dashboard views |
+| `app/api` | Parsing, report generation and database scaffolding |
 
 ## Checks
 
-The data tests use Node.js 22.6+ for TypeScript stripping.
+```sh
+npm run lint
+npx tsc --noEmit
+```
+
+Data tests require Node.js 22.6+:
 
 ```sh
-npx tsc --noEmit
 node --experimental-strip-types --test tests/entries.test.mjs
 ```
 
-## Stack
-
-Next.js, React, TypeScript, Tailwind CSS and Groq. Supabase scaffolding is not connected to the current browser-backed UI.
-
-This repository demonstrates development progress. It is not a production-ready service or a claim that the final case-study interface is fully implemented.
+Built with Next.js, React, TypeScript, Tailwind CSS and Groq. The development server uses Webpack.
